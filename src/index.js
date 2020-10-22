@@ -14,6 +14,7 @@ var http = require("http");
 var url = require("url");
 var path = require("path");
 var fs = require("fs");
+var qs = require("querystring");
 
 function notFound(req, res) {
   fs.readFile(path.join(__dirname, "404.html"), (err, data) => {
@@ -32,6 +33,35 @@ http
   .createServer(function (req, res) {
     let pathName = url.parse(req.url).pathname;
     console.log(pathName);
+
+    if (pathName.startsWith("/api")) {
+      const method = req.method;
+      if (method === "GET") {
+        console.log(method);
+        let query = qs.parse(url.parse(req.url).query);
+        let resData = {
+          code: 200,
+          msg: "success",
+          data: query
+        };
+        res.end(JSON.stringify(resData));
+        return;
+      }
+      if (method === "POST") {
+        const contentType = req.headers["content-type"];
+        if (contentType === "application/json") {
+          let postData = "";
+          req.on("data", (chunk) => {
+            postData += chunk;
+          });
+          req.on("end", () => {
+            res.end(postData);
+          });
+          return;
+        }
+      }
+    }
+
     if (pathName === "/") {
       pathName = path.join(__dirname, "index.html");
     }
